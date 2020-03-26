@@ -8,8 +8,8 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.pc = 0
-        self.ram = [0] * 8 # 8 general-purpose registers
-        self.reg = [0] * 256 # memory with 256 bytes
+        self.reg = [0] * 8 # 8 general-purpose registers
+        self.ram = [0] * 256 # memory with 256 bytes
 
 
     def load(self):
@@ -17,8 +17,11 @@ class CPU:
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        # LDI: load "immediate", store a value in a register, or "set this register to this value".
+        # PRN: a pseudo-instruction that prints the numeric value stored in a register.
+        # HLT: halt the CPU and exit the emulator.
 
+        # For now, we've just hardcoded a program:
         program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
@@ -63,11 +66,6 @@ class CPU:
 
         print()
 
-    def run(self):
-        """Run the CPU."""
-        pass
-
-    # RAM FUNCTIONS
 
     def ram_read(self, mar):
         """Should accept the address to read and return the value stored in the ram."""
@@ -75,7 +73,24 @@ class CPU:
 
 
     def ram_write(self, mdr, mar):
-        """Should accept a value to write, and the address to write it to. 
+        """Should accept a value to write, and the address to write it to.
         MAR - Memory Address Register, MDR - Memory Data Register"""
-        return self.ram[ram] = mdr
+        self.ram[mar] = mdr
 
+
+    def run(self):
+        """Run the CPU. PC - Program Counter, IR - Instruction Register"""
+        running = True
+
+        while running:
+            ir = self.ram[self.pc]
+
+            if ir == 0b10000010: # LDI
+                self.reg[self.ram_read(self.pc+1)] = self.ram_read(self.pc+2)
+                print(self.reg)
+                self.pc += 3
+            elif ir == 0b01000111: # PRN
+                print(self.reg[self.ram_read(self.pc+1)])
+                self.pc += 2
+            elif ir == 0b00000001: # HLT
+                break
