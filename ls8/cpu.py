@@ -8,7 +8,7 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.pc = 0
-        self.ram = [] # 8 general-purpose registers
+        self.ram = [0] * 8 # 8 general-purpose registers
         self.reg = [0] * 256 # memory with 256 bytes
 
 
@@ -67,7 +67,15 @@ class CPU:
         """Run the CPU."""
         pass
 
-    # KB
-    def ram_read(self, pc):
-        """Read the RAM."""
-        pass
+    # RAM FUNCTIONS
+
+    def ram_read(self, mar):
+        """Should accept the address to read and return the value stored in the ram."""
+        return self.ram[mar]
+
+
+    def ram_write(self, mdr, mar):
+        """Should accept a value to write, and the address to write it to. 
+        MAR - Memory Address Register, MDR - Memory Data Register"""
+        return self.ram[ram] = mdr
+
