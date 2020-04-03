@@ -107,4 +107,6 @@ class CPU:
                 self.reg[operand_a] = self.reg[operand_a] * self.reg[operand_b]
             elif ir == 0b00000001: # HLT
                 exit()
+            elif ir == 0b10100000: #ADD
+                self.alu("ADD", operand_a, operand_b)
             self.pc += 1
