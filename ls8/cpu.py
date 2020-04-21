@@ -78,13 +78,19 @@ class CPU:
     def ram_read(self, address):
         '''Should accept an address and return the stored value in the ram'''
         return self.ram[address]
+    
+    def ram_write(self, address, value):
+        '''Should accept an address and value and write the value to that place in ram'''
+        self.ram[address] = value
+        return
 
     def run(self):
         """Run the CPU."""
         running = True
-        
+
         while running:
-            if self.ram[self.pc] == 0b10000010: # LDI - save to reg
+            instruction = self.ram[self.pc]
+            if instruction == 0b10000010: # LDI - save to reg
                 # +1 is an register address, +2 is a value
                 reg_num = self.ram[self.pc+1]
                 value = self.ram[self.pc+2]
@@ -92,7 +98,7 @@ class CPU:
                 self.reg[reg_num] = value
                 # increment address by 3
                 self.pc += 3
-            elif self.ram[self.pc] == 0b01000111: # PRN - print
+            elif instruction == 0b01000111: # PRN - print
                 # +1 is reg address
                 # get value from address at register
                 reg_num = self.ram[self.pc+1]
@@ -100,8 +106,9 @@ class CPU:
                 print(value)
                 # increment address by 2
                 self.pc += 2
-            elif self.ram[self.pc] == 0b00000001: # HLT - halt
+            elif instruction == 0b00000001: # HLT - halt
                 running = False
+                exit()
             else:
                 print('Unknown Instruction!')
                 running = False
