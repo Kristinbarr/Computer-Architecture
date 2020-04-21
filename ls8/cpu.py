@@ -7,28 +7,43 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.pc = 0
+        self.reg = [0] * 8 # 8 general-purpose registers
+        self.ram = [0] * 256 # memory with 256 bytes
 
     def load(self):
         """Load a program into memory."""
 
         address = 0
 
-        # For now, we've just hardcoded a program:
+        # # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
+        try:
+            opcodes = open('examples/print8.ls8', 'r')
+            for line in opcodes:
+                comment_split = line.split("#")
+                num = comment_split[0].strip()
+                if num == '':
+                    continue
+                val = int(num, 2)
+                self.ram[address] = val
+                address += 1
+        except FileNotFoundError:
+            print('File Not Found!')
+            sys.exit(2)
 
 
     def alu(self, op, reg_a, reg_b):
@@ -60,6 +75,33 @@ class CPU:
 
         print()
 
+    def ram_read(self, address):
+        '''Should accept an address and return the stored value in the ram'''
+        return self.ram[address]
+
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        
+        while running:
+            if self.ram[self.pc] == 0b10000010: # LDI - save to reg
+                # +1 is an register address, +2 is a value
+                reg_num = self.ram[self.pc+1]
+                value = self.ram[self.pc+2]
+                # set the value to the register given
+                self.reg[reg_num] = value
+                # increment address by 3
+                self.pc += 3
+            elif self.ram[self.pc] == 0b01000111: # PRN - print
+                # +1 is reg address
+                # get value from address at register
+                reg_num = self.ram[self.pc+1]
+                value = self.reg[reg_num]
+                print(value)
+                # increment address by 2
+                self.pc += 2
+            elif self.ram[self.pc] == 0b00000001: # HLT - halt
+                running = False
+            else:
+                print('Unknown Instruction!')
+                running = False
