@@ -7,9 +7,10 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.pc = 0
-        self.reg = [0] * 8 # 8 general-purpose registers
-        self.ram = [0] * 256 # memory with 256 bytes
+        self.reg = [0] * 8             # 8 general-purpose registers
+        self.ram = [0] * 256           # memory with 256 bytes
+        self.pc = 0                    # program counter, pointing at current command
+        self.sp = 7                    # stack pointer, reg[7] reserved position
 
     def load(self):
         """Load a program into memory."""
@@ -27,31 +28,38 @@ class CPU:
         #     0b00000000,
         #     0b00000001, # HLT
         # ]
-
         # for instruction in program:
         #     self.ram[address] = instruction
         #     address += 1
+
         try:
-            opcodes = open('examples/print8.ls8', 'r')
-            for line in opcodes:
-                comment_split = line.split("#")
-                num = comment_split[0].strip()
-                if num == '':
-                    continue
-                val = int(num, 2)
-                self.ram[address] = val
-                address += 1
+            with open(sys.argv[1]) as f:
+                for line in f:
+                    # ignore comments and whitespaces
+                    comment_split = line.split("#") # makes each line a list of strings
+                    num = comment_split[0].strip() # removes spaces, ignores second index
+                    if num == '': # ignore blank lines
+                        continue
+                    val = int(num, 2) # binary
+                    self.ram[address] = val
+                    address += 1
         except FileNotFoundError:
-            print('File Not Found!')
+            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
 
+        print('ram:', self.ram)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "DIV":
+            self.reg[reg_a] /= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -82,33 +90,39 @@ class CPU:
     def ram_write(self, address, value):
         '''Should accept an address and value and write the value to that place in ram'''
         self.ram[address] = value
-        return
 
     def run(self):
         """Run the CPU."""
+        LDI = 0b10000010
+        PRN = 0b01000111
+        MUL = 0b10100010
+        HLT = 0b00000001
+        CAL = 0b01010000
+
         running = True
 
         while running:
             instruction = self.ram[self.pc]
-            if instruction == 0b10000010: # LDI - save to reg
+            if instruction == LDI: # saves the 8 to reg
                 # +1 is an register address, +2 is a value
-                reg_num = self.ram[self.pc+1]
+                reg_idx = self.ram[self.pc+1]
                 value = self.ram[self.pc+2]
                 # set the value to the register given
-                self.reg[reg_num] = value
-                # increment address by 3
+                self.reg[reg_idx] = value
                 self.pc += 3
-            elif instruction == 0b01000111: # PRN - print
-                # +1 is reg address
-                # get value from address at register
-                reg_num = self.ram[self.pc+1]
-                value = self.reg[reg_num]
+            elif instruction == PRN: # print
+                # get value from +1 (address at register)
+                reg_idx = self.ram[self.pc+1]
+                value = self.reg[reg_idx]
                 print(value)
-                # increment address by 2
                 self.pc += 2
-            elif instruction == 0b00000001: # HLT - halt
+            elif instruction == MUL:
+                self.reg[self.pc+1] = self.reg[self.pc+1] * self.reg[self.pc+2]
+            # elif instruction == CAL:
+
+            elif instruction == HLT: # HLT - halt
                 running = False
-                exit()
+                self.pc += 1
             else:
                 print('Unknown Instruction!')
-                running = False
+                sys.exit(1)
