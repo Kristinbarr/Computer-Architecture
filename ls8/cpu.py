@@ -11,6 +11,10 @@ class CPU:
         self.ram = [0] * 256           # memory with 256 bytes
         self.pc = 0                    # program counter, pointing at current command
         self.sp = 7                    # stack pointer, reg[7] reserved position
+        
+        self.branch_table = {
+            
+        }
 
     def load(self):
         """Load a program into memory."""
@@ -18,7 +22,6 @@ class CPU:
         address = 0
 
         # # For now, we've just hardcoded a program:
-
         # program = [
         #     # From print8.ls8
         #     0b10000010, # LDI R0,8
@@ -36,7 +39,7 @@ class CPU:
             with open(sys.argv[1]) as f:
                 for line in f:
                     # ignore comments and whitespaces
-                    comment_split = line.split("#") # makes each line a list of strings
+                    comment_split = line.split("#") # splits each line or comment into a list of strings
                     num = comment_split[0].strip() # removes spaces, ignores second index
                     if num == '': # ignore blank lines
                         continue
@@ -102,11 +105,16 @@ class CPU:
         running = True
 
         while running:
-            instruction = self.ram[self.pc]
+            # instruction = self.ram[self.pc]
+            instruction = self.ram_read(self.pc)
+            reg_a = self.ram_read(self.pc+1)
+            reg_b = self.ram_read(self.pc+2)
+
             if instruction == LDI: # saves the 8 to reg
                 # +1 is an register address, +2 is a value
                 reg_idx = self.ram[self.pc+1]
                 value = self.ram[self.pc+2]
+                # print('val:',value)
                 # set the value to the register given
                 self.reg[reg_idx] = value
                 self.pc += 3
@@ -117,12 +125,13 @@ class CPU:
                 print(value)
                 self.pc += 2
             elif instruction == MUL:
-                self.reg[self.pc+1] = self.reg[self.pc+1] * self.reg[self.pc+2]
+                self.alu('MUL', reg_a, reg_b)
+                self.pc += 3
             # elif instruction == CAL:
 
             elif instruction == HLT: # HLT - halt
                 running = False
                 self.pc += 1
             else:
-                print('Unknown Instruction!')
+                print('Unknown Instruction:', instruction)
                 sys.exit(1)
