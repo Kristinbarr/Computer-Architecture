@@ -98,10 +98,12 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         MUL = 0b10100010
+        ADD = 0b10100000
         PUSH = 0b01000101
         POP = 0b01000110
         HLT = 0b00000001
         CAL = 0b01010000
+        RET = 0b00010001
 
         running = True
 
@@ -123,7 +125,9 @@ class CPU:
             elif instruction == MUL:
                 self.alu('MUL', reg_a, reg_b)
                 self.pc += 3
-            # elif instruction == CAL:
+            elif instruction == ADD:
+                self.alu('ADD', reg_a, reg_b)
+                self.pc += 3
             elif instruction == PUSH: # push value given to register
                 # get value from register address
                 value = self.reg[reg_a]
@@ -132,13 +136,29 @@ class CPU:
                 self.ram_write(self.sp, value)
                 self.pc += 2
             elif instruction == POP: # return value given to register
-                # get value from stack
+                # get value from top of stack
                 value = self.ram_read(self.sp)
                 # set value to register address given
                 self.reg[reg_a] = value
                 # decrement stack pointer and add to program counter
                 self.sp -= 1
                 self.pc += 2
+            elif instruction == CAL: # jumps to address given
+                # compute return address
+                return_address = self.pc + 2
+                # push on the stack
+                self.reg[self.sp] -= 1
+                self.ram[self.reg[self.sp]] = return_address
+                # set pc to value in given register
+                reg_idx = reg_a
+                dest_dddress = self.reg[reg_idx]
+                self.pc = dest_dddress
+            elif instruction == RET:
+                # pop return address from top of stack
+                return_address = self.ram[self.reg[self.sp]]
+                self.reg[self.sp] += 1
+                # set pc
+                self.pc = return_address
             elif instruction == HLT: # HLT - halt
                 running = False
                 self.pc += 1
