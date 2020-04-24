@@ -7,10 +7,10 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.reg = [0] * 8             # 8 general-purpose registers
-        self.ram = [0] * 256           # memory with 256 bytes
-        self.pc = 0                    # program counter, pointing at current command
-        self.sp = 7                    # stack pointer, reg[7] reserved position
+        self.ram = [0] * 256  # memory with 256 bytes
+        self.reg = [0] * 8    # 8 general-purpose registers
+        self.pc = 0           # program counter, pointing at current command
+        self.sp = self.reg[7] # stack pointer, reg[7] reserved position
         
         self.branch_table = {
             
@@ -38,7 +38,6 @@ class CPU:
         try:
             with open(sys.argv[1]) as f:
                 for line in f:
-                    # ignore comments and whitespaces
                     comment_split = line.split("#") # splits each line or comment into a list of strings
                     num = comment_split[0].strip() # removes spaces, ignores second index
                     if num == '': # ignore blank lines
@@ -50,7 +49,7 @@ class CPU:
             print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
 
-        print('ram:', self.ram)
+        print('RAM:', self.ram)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -99,6 +98,8 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         MUL = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
         HLT = 0b00000001
         CAL = 0b01010000
 
@@ -110,25 +111,34 @@ class CPU:
             reg_a = self.ram_read(self.pc+1)
             reg_b = self.ram_read(self.pc+2)
 
-            if instruction == LDI: # saves the 8 to reg
+            if instruction == LDI: # save the value to reg
                 # +1 is an register address, +2 is a value
-                reg_idx = self.ram[self.pc+1]
-                value = self.ram[self.pc+2]
-                # print('val:',value)
-                # set the value to the register given
-                self.reg[reg_idx] = value
+                self.reg[reg_a] = reg_b
                 self.pc += 3
             elif instruction == PRN: # print
                 # get value from +1 (address at register)
-                reg_idx = self.ram[self.pc+1]
-                value = self.reg[reg_idx]
+                value = self.reg[reg_a]
                 print(value)
                 self.pc += 2
             elif instruction == MUL:
                 self.alu('MUL', reg_a, reg_b)
                 self.pc += 3
             # elif instruction == CAL:
-
+            elif instruction == PUSH: # push value given to register
+                # get value from register address
+                value = self.reg[reg_a]
+                # decrement stack pointer
+                self.sp -= 1
+                self.ram_write(self.sp, value)
+                self.pc += 2
+            elif instruction == POP: # return value given to register
+                # get value from stack
+                value = self.ram_read(self.sp)
+                # set value to register address given
+                self.reg[reg_a] = value
+                # decrement stack pointer and add to program counter
+                self.sp -= 1
+                self.pc += 2
             elif instruction == HLT: # HLT - halt
                 running = False
                 self.pc += 1
