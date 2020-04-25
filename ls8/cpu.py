@@ -11,7 +11,7 @@ class CPU:
         self.reg = [0] * 8    # 8 general-purpose registers
         self.pc = 0           # program counter, pointing at current command
         self.sp = self.reg[7] # stack pointer, reg[7] reserved position
-        
+        self.fl = 0b0000000   # 00000LGE
         self.branch_table = {
             
         }
@@ -62,6 +62,16 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "DIV":
             self.reg[reg_a] /= self.reg[reg_b]
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:
+                # set equal flag E to 1, else 0
+                self.fl = 0b00000001
+            if self.reg[reg_a] < self.reg[reg_b]:
+                # set lass flag L to 1, else 0
+                self.fl = 0b00000100
+            if self.reg[reg_a] > self.reg[reg_b]:
+                # set greater flag G to 1, else 0
+                self.fl = 0b00000010
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -104,6 +114,10 @@ class CPU:
         HLT = 0b00000001
         CAL = 0b01010000
         RET = 0b00010001
+        CMP = 0b10100111
+        JMP = 0b01010100
+        JEQ = 0b01010101
+        JNE = 0b01010110
 
         running = True
 
@@ -117,6 +131,9 @@ class CPU:
                 # +1 is an register address, +2 is a value
                 self.reg[reg_a] = reg_b
                 self.pc += 3
+            elif instruction == HLT: # HLT - halt
+                running = False
+                self.pc += 1
             elif instruction == PRN: # print
                 # get value from +1 (address at register)
                 value = self.reg[reg_a]
@@ -144,24 +161,38 @@ class CPU:
                 self.sp -= 1
                 self.pc += 2
             elif instruction == CAL: # jumps to address given
-                # compute return address
+                # compute return address after call finishes
                 return_address = self.pc + 2
-                # push on the stack
+                # push return address on the stack
                 self.reg[self.sp] -= 1
                 self.ram[self.reg[self.sp]] = return_address
                 # set pc to value in given register
-                reg_idx = reg_a
-                dest_dddress = self.reg[reg_idx]
-                self.pc = dest_dddress
+                self.pc = self.reg[reg_a]
             elif instruction == RET:
                 # pop return address from top of stack
                 return_address = self.ram[self.reg[self.sp]]
                 self.reg[self.sp] += 1
                 # set pc
                 self.pc = return_address
-            elif instruction == HLT: # HLT - halt
-                running = False
-                self.pc += 1
+            
+            # SPRINT
+            elif instruction == CMP: # compare reg_a and reg_b
+                self.alu('CMP', reg_a, reg_b)
+                self.pc += 3
+            elif instruction == JMP: # jump to given reg address
+                # set pc to the given register address
+                self.pc = self.reg[reg_a]
+            elif instruction == JEQ: # if E is 1, jump to given address
+                if self.fl == 0b00000001:
+                    self.pc = self.reg[reg_a]
+                else:
+                    self.pc += 2
+            elif instruction == JNE: # if E is 0, jump to stored given address
+                if self.fl != 0b00000001:
+                    self.pc = self.reg[reg_a]
+                else:
+                    self.pc += 2
+
             else:
                 print('Unknown Instruction:', instruction)
                 sys.exit(1)
